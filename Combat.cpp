@@ -6,6 +6,8 @@
 #define PI 3.14159265
 #include <algorithm>
 #include <functional>
+#undef min
+#undef max
 
 namespace olc
 {
