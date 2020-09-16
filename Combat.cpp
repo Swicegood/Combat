@@ -154,7 +154,6 @@ class Combat : public olc::PixelGameEngine
     int nSquareSize;
     bool collision = false;
     bool blocked = false;
-    bool draw = true;
     bool spinning = false;
     std::vector<olc::aabb::rect> vRects, vprevtankRects;
     float fAccumTime = 0;
@@ -214,25 +213,12 @@ class Combat : public olc::PixelGameEngine
         decBullet = new olc::Decal(sprBullet);
 
 
-        /*sTank += L"#######..";
-        sTank += L"#######..";
-        sTank += L"..###....";
-        sTank += L"..#######";
-        sTank += L"..###....";
-        sTank += L"#######..";
-        sTank += L"#######..";*/
-
-  
-        
-       /* myTank.xpos = 70;
-        myTank.ypos = 68;
-        otherTank.xpos = 140;
-        otherTank.ypos = 68;*/
+        //Initial positiions
         myTank.tankRect.pos = { 70,68 };
         otherTank.tankRect.pos = { 168,68 };
         otherTank.ang = PI;
         
-       
+       //Put all Board tiles in vRects
        for (int y = 0; y < nBoardHeight; y++) {
            for (int x = 0; x < (nBoardWidth); x++) {
                 if (sBoard[(y * nBoardWidth) + x] == '#') {
@@ -251,35 +237,9 @@ class Combat : public olc::PixelGameEngine
 
     virtual bool OnUserUpdate(float fElapsedTime)
     {
-        /*  olc::matrix3x3 matFinal, matA, matB, matC, matFinalInv;
-        olc::matrix3x3 mat2Final, mat2A, mat2B, mat2C, mat2FinalInv;
-        olc::matrix3x3 curmatFinal, curmatFinalInv, curomatFinalInv;*/
+        DrawDecal({0, 0}, decBG); //Draw background from GPU
 
-        /* Clear(olc::Pixel(136, 140, 137));*/
-
-
-         /*for (int x = 0; x < (nBoardWidth); x++) {
-             for (int y = 0; y < nBoardHeight; y++) {
-                 if (sBoard[(y * nBoardWidth) + x] == '#') {
-                     FillRect(x * nSquareSize, y * nSquareSize, ((x + 1) * nSquareSize), (((y + 1) * nSquareSize)), olc::Pixel(145, 44, 35));
-                 }
-                 else {
-                     FillRect(x * nSquareSize, y * nSquareSize, ((x + 1) * nSquareSize), ((y + 1) * nSquareSize), olc::Pixel(136, 140, 137));
-
-                 }
-             }
-
-         }*/
-
-        DrawDecal({0, 0}, decBG);
-
-       /* prevTank = myTank;
-        prevOtherTank = otherTank;*/
-
-        // Handle Input
-        // Handle Player Input
         if (myTank.spinning) {            
-           /* r--; if (r == -1) { r = 15; }*/
             myTank.ang -= 0.125 * PI;
             if (abs(myTank.ang) >= 2 * PI)
                 myTank.ang = 0;
@@ -295,29 +255,23 @@ class Combat : public olc::PixelGameEngine
 
             if (GetKey(olc::DOWN).bHeld) {
                 myTank.tankRect.vel = {-myTank.tankRect.vel.x, -myTank.tankRect.vel.y};
-                /*myTank.vx = -myTank.vx; myTank.vy = -myTank.vy;*/
             }
 
             if (GetKey(olc::LEFT).bHeld) {
-                /*r++; if (r == 16)  r = 0;*/
                 myTank.ang += 0.125 * PI * fElapsedTime * 6;
             }
             if (GetKey(olc::RIGHT).bHeld) {
-                /*r--; if (r == -1) r = 15;*/
                 myTank.ang -= 0.125 * PI * fElapsedTime * 6;
             }
             if (abs(myTank.ang) >= 2 * PI)
                 myTank.ang = 0;
-           
-           /* myTank.xpos += myTank.vx; myTank.ypos += myTank.vy;*/
         }
 
-        r = (int((myTank.ang / PI) * 8)); r = (r < 0) ? abs(r) : 16 - r; if (r == 16) r = 0;
+        r = (int((myTank.ang / PI) * 8)); r = (r < 0) ? abs(r) : 16 - r; if (r == 16) r = 0;  //Set rotation to one of 16 positions
         
         
 
         if (otherTank.spinning) {
-            /*q--; if (q == -1) { q = 15; }*/
             otherTank.ang += 0.125 * PI;
             if (abs(otherTank.ang) >= 2 * PI)
                 otherTank.ang = 0;
@@ -325,10 +279,7 @@ class Combat : public olc::PixelGameEngine
         else {
            
             if (blocked) {
-                /*q--; if (q == -1) { q = 15; }*/
                 otherTank.ang -= (0.125 * PI); 
-               /* otherTank.xpos -= 2 * otherTank.vx; otherTank.ypos -= 2 * otherTank.vy;*/
-               /* otherTank.tankRect.vel = -2 * otherTank.tankRect.vel;*/
                 blocked = false;
             }
             if (abs(otherTank.ang) >= 2 * PI)
@@ -336,29 +287,12 @@ class Combat : public olc::PixelGameEngine
             q = (int((otherTank.ang / PI) * 8)); q = (q < 0) ? abs(q) : 16 - q; if (q == 16) q = 0;
             otherTank.tankRect.vel = { float(3.0 * cosf(q * 0.125 * PI)),float(3.0 * (sinf(q * 0.125 * PI))) };
             }
-        q = (int((otherTank.ang / PI) * 8)); q = (q < 0) ? abs(q) : 16 - q; if (q == 16) q = 0;
+        q = (int((otherTank.ang / PI) * 8)); q = (q < 0) ? abs(q) : 16 - q; if (q == 16) q = 0; //Set rotational position
        
-        
-
-        //olc::Translate(matA, -4, -3);
-        //olc::Translate(mat2A, -4, -3);
-        //olc::Rotate(matB, myTank.ang);
-        //olc::Rotate(mat2B, otherTank.ang);
-        //olc::MatixMultiply(matC, matB, matA);
-        //olc::MatixMultiply(mat2C, mat2B, mat2A);
-        //olc::Translate(matA, myTank.xpos+4, myTank.ypos+3);
-        //olc::Translate(mat2A, otherTank.xpos + 4, otherTank.ypos + 3);
-        //olc::MatixMultiply(matFinal, matA, matC);
-        //olc::MatixMultiply(mat2Final, mat2A, mat2C);
-        //    
-        //olc::Invert(matFinal, matFinalInv);
-        //olc::Invert(mat2Final, mat2FinalInv);
-
        
-
+        //Fire bullet on spacebar
         if ((GetKey(olc::SPACE).bPressed) && myTank.spinning == false && otherTank.spinning == false) {
             myTank.bullet_exists = true;
-        /*    olc::Forward(matFinal, 8, 3, myTank.bullet.pos.x, myTank.bullet.pos.y);*/
             myTank.bullet.pos = muzzle_pos[r]+myTank.tankRect.pos;
             myTank.bullet.size = { 1.0,1.0 };
             myTank.bullet.vel = { float(100.0 * cosf(r*0.125*PI)),float (100.0 * (sinf(r*0.125*PI))) };          
@@ -371,8 +305,7 @@ class Combat : public olc::PixelGameEngine
                 otherTank.bullet_exists = true;
                 myTank.spinning = false; otherTank.spinning = false;
             }
-            if (otherTank.bullet_exists) {
-             /*   olc::Forward(mat2Final, 8, 3, otherTank.bullet.pos.x, otherTank.bullet.pos.y);*/
+            if (otherTank.bullet_exists) {  //Fire bullet every few seconds
                 otherTank.bullet.pos = muzzle_pos[q]+otherTank.tankRect.pos;
                 otherTank.bullet.size = { 1.0,1.0 };
                 otherTank.bullet.vel = { float(100.0 * cosf(q * 0.125 * PI)),float(100.0 * (sinf(q * 0.125 * PI))) };                
@@ -386,123 +319,32 @@ class Combat : public olc::PixelGameEngine
         DrawPartialDecal(otherTank.tankRect.pos, decTank, { float((q % 4) * Tanksize),float((q / 4) * Tanksize) }, { float(Tanksize),float(Tanksize) }, { 1, 1 }, olc::BLUE);
 
 
-
-
-        //Resume after spin
-
-
-        
-       
-
         for (int k = 0; k < 2; k++) {
             olc::Pixel p, curp;
             Tank* curTank = nullptr;
-           /* Tank lastTank = prevTank;*/
             Tank* curoppTank = nullptr;
 
-            if (k == 0) {
-                /* curmatFinal = matFinal;
-                 curmatFinalInv = matFinalInv;
-                 curomatFinalInv = mat2FinalInv;*/
+            if (k == 0) {   //Player's tank
                 curp = olc::Pixel(255, 0, 0);
                 curTank = &myTank;
-             /*   lastTank = prevTank;*/
                 curoppTank = &otherTank;
 
             }
-            if (k == 1) {
-                /*curmatFinal = mat2Final;
-                curmatFinalInv = mat2FinalInv;
-                curomatFinalInv = matFinalInv;*/
+            if (k == 1) { //AI tank
                 curp = olc::Pixel(0, 0, 255);
                 curTank = &otherTank;
                 curoppTank = &myTank;
-               /* lastTank = prevOtherTank;*/
             }
 
-            // Work out bounding box of sprite post-transformation
-            // by passing through sprite corner locations into 
-            // transformation matrix
+           
+            vRects.push_back(curoppTank->tankRect); //Add Opponent tank to vRects
 
-    //        float ex, ey;
-    //        float sx, sy;
-    //        float px, py;
-
-    //            olc::Forward(curmatFinal, 0.0f, 0.0f, px, py);
-    //            sx = px; sy = py;
-    //            ex = px; ey = py;
-
-    //            olc::Forward(curmatFinal, 9.0f, 7.0f, px, py);
-    //            sx = std::min(sx, px); sy = std::min(sy, py);
-    //            ex = std::max(ex, px); ey = std::max(ey, py);
-
-    //            olc::Forward(curmatFinal, 0.0f, 7.0f, px, py);
-    //            sx = std::min(sx, px); sy = std::min(sy, py);
-    //            ex = std::max(ex, px); ey = std::max(ey, py);
-
-    //            olc::Forward(curmatFinal, 9.0f, 0.0f, px, py);
-    //            sx = std::min(sx, px); sy = std::min(sy, py);
-    //            ex = std::max(ex, px); ey = std::max(ey, py);
-
-    //        // Use transformed corner locations in screen space to establish
-    //        // region of pixels to fill, using inverse transform to sample
-    //        // sprite at suitable locations.
-
-    //        std::vector<olc::aabb::rect> vcurtankRects;
-    //        for (int x = sx; x < ex; x++)
-    //        {
-    //            for (int y = sy; y < ey; y++)
-    //            {
-    //                float nx, ny, ox, oy;
-    //                olc::Forward(curmatFinalInv, (float)x, (float)y, nx, ny);
-    //                olc::Forward(curomatFinalInv,(float)x, (float)y, ox, oy);
-    //                p = olc::Pixel(136, 140, 137);
-    //                if ((0 <= nx && nx <= 8) && (0 <= ny && ny <= 6)) {
-    //                    if (sTank[((int32_t)(ny + 0.5f) * 9) + (int32_t)(nx + 0.5f)] == '#') {
-    //                        p = curp;
-    //                        vcurtankRects.push_back({ {float(x),float(y)}, {1,1} });
-    //                        if (sBoard[(floor(y / 4) * nBoardWidth + floor(x / 4))] == '#')  //detect collition
-    //                            collision = true;
-    //                        if ((0 <= ox && ox <= 8) && (0 <= oy && oy <= 6)) {
-    //                            if (sTank[((int32_t)(oy + 0.5f) * 9) + (int32_t)(ox + 0.5f)] == '#')  //detect collision
-    //                                collision = true;
-    //                        }
-    //                    }
-    //                }
-    //                else {
-    //                        if ((0 <= ox && ox <= 8) && (0 <= oy && oy <= 6)) {
-    //                            if (sTank[((int32_t)(oy + 0.5f) * 9) + (int32_t)(ox + 0.5f)] == '#')
-    //                                draw = false;
-
-    //                        }
-    //                }
-
-    //                if ((sBoard[(floor(y / 4) * nBoardWidth + floor(x / 4))] != '#') && draw == true) {
-    //                    Draw(x, y, p);
-    //                    
-    //                }
-    //                draw = true;
-    //            }
-    //        }
-
-    //        
-
-    //        //concat tank rect vector with board rectangle vector
-          /*  int m = vprevtankRects.size();
-
-            for (size_t i = 0; i < m ; i++) {*/
-            //olc::aabb::rect curTankRect({ { float(curoppTank->xpos),float(curoppTank->ypos) }, { float(Tanksize),float(Tanksize) },{float((*curTank).vx), float((*curTank).vy)} });
-            vRects.push_back(curoppTank->tankRect);
-            //        }
-            //                 
-            
-                    // Sort collisions in order of distance
             olc::vf2d cp, cn;
             float t = 0, min_t = INFINITY;
             std::vector<std::pair<int, float>> z;
 
             if ((*curTank).bullet_exists) {
-                if ((*curTank).bullet.vel.x != 0 || (*curTank).bullet.vel.y != 0)
+                if ((*curTank).bullet.vel.x != 0 || (*curTank).bullet.vel.y != 0) //While bullet in flight
                     DrawDecal((*curTank).bullet.pos,decBullet) ;
                 // Work out collision point, add it to vector along with rect ID
                 for (size_t i = 0; i < vRects.size(); i++)
@@ -522,15 +364,11 @@ class Combat : public olc::PixelGameEngine
                 // Now resolve the collision in correct order 
                 for (auto j : z) {
                     if (olc::aabb::ResolveDynamicRectVsRect(&(*curTank).bullet, fElapsedTime, &vRects[j.first])) {
-                        //    if vRects[j.first] is in vprevtankRects then spin around
-                        //for (int l = 0; l < vprevtankRects.size(); l++) {
-                        if (((*curoppTank).tankRect.pos.x == vRects[j.first].pos.x) && ((*curoppTank).tankRect.pos.y == vRects[j.first].pos.y)) {
-
+                        // Collided with object is opponent tank
+                        if (((*curoppTank).tankRect.pos.x == vRects[j.first].pos.x) && ((*curoppTank).tankRect.pos.y == vRects[j.first].pos.y)) {  
                         (*curoppTank).spinning = true;
-                        /*(*curoppTank).xpos += int(0.5 * (*curTank).bullet.vel.x);
-                        (*curoppTank).ypos += int(0.5 * (*curTank).bullet.vel.y);*/
-                        (*curoppTank).tankRect.vel += (2 * (*curTank).bullet.vel);
-                        otherTank.bullet_exists = false;
+                        (*curoppTank).tankRect.vel += (2 * (*curTank).bullet.vel); //Blown back
+                        otherTank.bullet_exists = false;  //Pause fighting
                         fAccumTime = 0;                        
                         }
                         (*curTank).bullet.vel = { 0,0 };
@@ -563,37 +401,19 @@ class Combat : public olc::PixelGameEngine
             // Now resolve the collision in correct order 
             for (auto j : zz) {
                 if (olc::aabb::ResolveDynamicRectVsRect(&(*curTank).tankRect, fElapsedTime, &vRects[j.first])) {
-                    //    if vRects[j.first] is in vprevtankRects then spin around
-                    //for (int l = 0; l < vprevtankRects.size(); l++) {
-                    //    if (vprevtankRects[l].pos.x == vRects[j.first].pos.x) {
-                    //        if (vprevtankRects[l].pos.y == vRects[j.first].pos.y) {
-                   /* (*curoppTank).spinning = true;
-                    (*curoppTank).xpos += int(0.5 * (*curTank).bullet.vel.x);
-                    (*curoppTank).ypos += int(0.5 * (*curTank).bullet.vel.y);*/
-                    /*otherTank.bullet_exists = false;
-                    fAccumTime = 0;*/
-                    /*     }
-                     }
-                 }*/
                     collision = true;
                 }
             }
-            (*curTank).tankRect.pos += (*curTank).tankRect.vel * fElapsedTime;
-
+            (*curTank).tankRect.pos += (*curTank).tankRect.vel * fElapsedTime; //Upade position of tank
 
 
             if (collision) {
-               /* (*curTank) = lastTank;*/
                 collision = false;
                 if (((*curTank).tankRect.pos.x == otherTank.tankRect.pos.x) && ((*curTank).tankRect.pos.y == otherTank.tankRect.pos.y))
                     blocked = true;
             }
 
-            /*for (size_t i = 0; i < m; i++) {*/
-            vRects.pop_back();
-            //}
-
-            /*vprevtankRects = vcurtankRects;*/
+            vRects.pop_back(); //remove opponent tank from vector
         }return true;
     }
 
