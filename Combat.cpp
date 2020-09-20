@@ -1,7 +1,8 @@
 
 #define OLC_PGE_APPLICATION
-
+#define OLC_PGEX_SOUND
 #include "olcPixelGameEngine.h"
+#include "olcPGEX_Sound.h"
 #include "math.h"
 #define PI 3.14159265
 #include <algorithm>
@@ -123,6 +124,19 @@ namespace olc
         }
     }
 }
+/*
+ * Generic function to find if an element of any type exists in list
+ */
+template <typename T>
+bool contains(std::list<T>& listOfElements, const T& element)
+{
+    // Find the iterator if element in list
+    auto it = std::find(listOfElements.begin(), listOfElements.end(), element);
+    //return if iterator points to end or not. It points to end then it means element
+    // does not exists in list
+    return it != listOfElements.end();
+}
+
 
 class Combat : public olc::PixelGameEngine
 {
@@ -138,11 +152,13 @@ class Combat : public olc::PixelGameEngine
             bullet_exists = true;
             spinning = false;
             bullet.pos = { 0,0 };
+            score = 0;
             tankRect = { {0,0},{8,8},{0,0} };
         }       
         float ang;
         bool bullet_exists;
         bool spinning;
+        int score;
         olc::aabb::rect bullet, tankRect;
 
    };
@@ -157,8 +173,9 @@ class Combat : public olc::PixelGameEngine
     bool spinning = false;
     std::vector<olc::aabb::rect> vRects, vprevtankRects;
     float fAccumTime = 0;
-    olc::Sprite* sprTank = nullptr, *sprBG = nullptr, *sprBullet = nullptr;
-    olc::Decal* decTank = nullptr, *decBG = nullptr, *decBullet = nullptr;
+    olc::Sprite* sprTank = nullptr, *sprBG = nullptr, *sprBullet = nullptr, *sprFont = nullptr;
+    olc::Decal* decTank = nullptr, * decBG = nullptr, * decBullet = nullptr, *decFont = nullptr;
+    int sndIdle = 0, sndDriving = 0, sndPew = 0, sndPow = 0;
     int r = 0,q = 8;
     int Tanksize = 8;
     olc::vf2d muzzle_pos[16] = { {7,3} ,{ 7,5 }, { 7,7 }, { 5,7 },{ 3,7 }, {2,7} ,{ 0,7 }, { 0,5 }, { 0,3 }, { 0,2 }, { 0,0 }, { 2,0 }, { 3,0 }, { 5,0 }, { 7,0 }, { 7,2 }, };
@@ -211,7 +228,15 @@ class Combat : public olc::PixelGameEngine
         decBG = new olc::Decal(sprBG);
         sprBullet = new olc::Sprite("1pixel.png");
         decBullet = new olc::Decal(sprBullet);
-
+        sprFont = new olc::Sprite("combat_font.png");
+        decFont = new olc::Decal(sprFont);
+        
+        
+        olc::SOUND::InitialiseAudio(44100, 1, 8, 512);
+        sndIdle = olc::SOUND::LoadAudioSample("idle.wav");
+        sndDriving = olc::SOUND::LoadAudioSample("driving.wav");
+        sndPew = olc::SOUND::LoadAudioSample("pew.wav");
+        sndPow = olc::SOUND::LoadAudioSample("pow.wav");
 
         //Initial positiions
         myTank.tankRect.pos = { 70,68 };
@@ -234,10 +259,19 @@ class Combat : public olc::PixelGameEngine
     }
 
 
-
+    
     virtual bool OnUserUpdate(float fElapsedTime)
     {
         DrawDecal({0, 0}, decBG); //Draw background from GPU
+
+        DrawPartialDecal({ 40,3 }, decFont, { float((myTank.score % 10) * 12), 0 }, { 12,5 }, { 1,1 }, olc::RED);
+        if (myTank.score > 9)
+            DrawPartialDecal({ 27,3 }, decFont, { float((myTank.score / 10) * 12), 0 }, { 12,5 }, { 1,1 }, olc::RED);
+
+        DrawPartialDecal({132 ,3 }, decFont, { float((otherTank.score % 10) * 12), 0 }, { 12,5 }, { 1,1 }, olc::BLUE);
+        if (otherTank.score > 9)
+            DrawPartialDecal({ 119,3 }, decFont, { float((otherTank.score / 10) * 12), 0 }, { 12,5 }, { 1,1 }, olc::BLUE);
+
 
         if (myTank.spinning) {            
             myTank.ang -= 0.125 * PI;
@@ -245,12 +279,18 @@ class Combat : public olc::PixelGameEngine
                 myTank.ang = 0;
         }
         else {
+            // Find first occurence of sample id
+            auto s = std::find_if(olc::SOUND::listActiveSamples.begin(), olc::SOUND::listActiveSamples.end(), [&](const olc::SOUND::sCurrentlyPlayingSample& s) { return s.nAudioSampleID == sndIdle; });
+            if (s == olc::SOUND::listActiveSamples.end())
+                olc::SOUND::PlaySample(sndIdle, true);
+
             if ((GetKey(olc::UP).bHeld) || (GetKey(olc::DOWN).bHeld)) {
                 
                 myTank.tankRect.vel = { 6*cosf(r*.125*PI),6*(sinf(r*.125*PI)) };
             }
             else {
                 myTank.tankRect.vel = { 0,0 };
+                olc::SOUND::StopSample(sndDriving);
             }
 
             if (GetKey(olc::DOWN).bHeld) {
@@ -265,11 +305,20 @@ class Combat : public olc::PixelGameEngine
             }
             if (abs(myTank.ang) >= 2 * PI)
                 myTank.ang = 0;
+
+            //Driving sound
+            if (myTank.tankRect.vel.x != 0 || myTank.tankRect.vel.y != 0) {
+                auto s = std::find_if(olc::SOUND::listActiveSamples.begin(), olc::SOUND::listActiveSamples.end(), [&](const olc::SOUND::sCurrentlyPlayingSample& s) { return s.nAudioSampleID == sndDriving; });
+                if (s == olc::SOUND::listActiveSamples.end()) {
+                    olc::SOUND::StopSample(sndIdle);
+                    olc::SOUND::PlaySample(sndDriving);
+                }
+            }
         }
 
         r = (int((myTank.ang / PI) * 8)); r = (r < 0) ? abs(r) : 16 - r; if (r == 16) r = 0;  //Set rotation to one of 16 positions
         
-        
+       
 
         if (otherTank.spinning) {
             otherTank.ang += 0.125 * PI;
@@ -296,19 +345,24 @@ class Combat : public olc::PixelGameEngine
             myTank.bullet.pos = muzzle_pos[r]+myTank.tankRect.pos;
             myTank.bullet.size = { 1.0,1.0 };
             myTank.bullet.vel = { float(100.0 * cosf(r*0.125*PI)),float (100.0 * (sinf(r*0.125*PI))) };          
-
+            olc::SOUND::PlaySample(sndPew);
         }
 
         fAccumTime += fElapsedTime;
-        if (fAccumTime >  5) {
+        if (fAccumTime > 1) {
             if (myTank.spinning || otherTank.spinning) {   //Resume after spin
                 otherTank.bullet_exists = true;
                 myTank.spinning = false; otherTank.spinning = false;
             }
+            
+        }
+
+        if (fAccumTime >  5) {           
             if (otherTank.bullet_exists) {  //Fire bullet every few seconds
                 otherTank.bullet.pos = muzzle_pos[q]+otherTank.tankRect.pos;
                 otherTank.bullet.size = { 1.0,1.0 };
-                otherTank.bullet.vel = { float(100.0 * cosf(q * 0.125 * PI)),float(100.0 * (sinf(q * 0.125 * PI))) };                
+                otherTank.bullet.vel = { float(100.0 * cosf(q * 0.125 * PI)),float(100.0 * (sinf(q * 0.125 * PI))) };
+                olc::SOUND::PlaySample(sndPew);
             }  
             fAccumTime = 0;
         }
@@ -318,7 +372,7 @@ class Combat : public olc::PixelGameEngine
         DrawPartialDecal(myTank.tankRect.pos, decTank, { float((r % 4) * Tanksize),float((r / 4) * Tanksize) }, { float(Tanksize),float(Tanksize) }, { 1, 1 }, olc::RED);
         DrawPartialDecal(otherTank.tankRect.pos, decTank, { float((q % 4) * Tanksize),float((q / 4) * Tanksize) }, { float(Tanksize),float(Tanksize) }, { 1, 1 }, olc::BLUE);
 
-
+        //Precess motion for tanks and bullets
         for (int k = 0; k < 2; k++) {
             olc::Pixel p, curp;
             Tank* curTank = nullptr;
@@ -366,10 +420,14 @@ class Combat : public olc::PixelGameEngine
                     if (olc::aabb::ResolveDynamicRectVsRect(&(*curTank).bullet, fElapsedTime, &vRects[j.first])) {
                         // Collided with object is opponent tank
                         if (((*curoppTank).tankRect.pos.x == vRects[j.first].pos.x) && ((*curoppTank).tankRect.pos.y == vRects[j.first].pos.y)) {  
-                        (*curoppTank).spinning = true;
-                        (*curoppTank).tankRect.vel += (2 * (*curTank).bullet.vel); //Blown back
-                        otherTank.bullet_exists = false;  //Pause fighting
-                        fAccumTime = 0;                        
+                            (*curoppTank).spinning = true; (*curTank).score += 1;
+                            if ((*curTank).score > 99)
+                                (*curTank).score = 0;
+                            olc::SOUND::StopSample(sndIdle);                       
+                            olc::SOUND::PlaySample(sndPow);
+                            (*curoppTank).tankRect.vel += (2 * (*curTank).bullet.vel); //Blown back
+                            otherTank.bullet_exists = false;  //Pause fighting
+                            fAccumTime = 0;                        
                         }
                         (*curTank).bullet.vel = { 0,0 };
                      }
@@ -415,8 +473,13 @@ class Combat : public olc::PixelGameEngine
 
             vRects.pop_back(); //remove opponent tank from vector
         }return true;
-    }
 
+    }
+     bool OnUserDestroy()
+            {
+                olc::SOUND::DestroyAudio();
+                return true;
+            }
 };
  
 
