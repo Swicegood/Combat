@@ -2,7 +2,7 @@
 #define OLC_PGE_APPLICATION
 #define OLC_PGEX_SOUND
 #include "olcPixelGameEngine.h"
-#include "olcPGEX_Sound.h"
+// #include "olcPGEX_Sound.h"
 #include "math.h"
 #define PI 3.14159265
 #include <algorithm>
@@ -222,21 +222,22 @@ class Combat : public olc::PixelGameEngine
         sBoard += L"#.....................###.....................#";
         sBoard += L"###############################################";
 
-        sprTank = new olc::Sprite("tank.png");
+        sprTank = new olc::Sprite("./assets/tank.png");
         decTank = new olc::Decal(sprTank);
-        sprBG = new olc::Sprite("combat.png");
+        sprBG = new olc::Sprite("./assets/combat.png");
         decBG = new olc::Decal(sprBG);
-        sprBullet = new olc::Sprite("1pixel.png");
+        sprBullet = new olc::Sprite("./assets/1pixel.png");
         decBullet = new olc::Decal(sprBullet);
-        sprFont = new olc::Sprite("combat_font.png");
+        sprFont = new olc::Sprite("./assets/combat_font.png");
         decFont = new olc::Decal(sprFont);
         
         
-        olc::SOUND::InitialiseAudio(44100, 1, 8, 512);
+      /*  olc::SOUND::InitialiseAudio(44100, 1, 8, 512);
         sndIdle = olc::SOUND::LoadAudioSample("idle.wav");
         sndDriving = olc::SOUND::LoadAudioSample("driving.wav");
         sndPew = olc::SOUND::LoadAudioSample("pew.wav");
         sndPow = olc::SOUND::LoadAudioSample("pow.wav");
+        */
 
         //Initial positiions
         myTank.tankRect.pos = { 70,68 };
@@ -280,17 +281,17 @@ class Combat : public olc::PixelGameEngine
         }
         else {
             // Find first occurence of sample id
-            auto s = std::find_if(olc::SOUND::listActiveSamples.begin(), olc::SOUND::listActiveSamples.end(), [&](const olc::SOUND::sCurrentlyPlayingSample& s) { return s.nAudioSampleID == sndIdle; });
+          /*  auto s = std::find_if(olc::SOUND::listActiveSamples.begin(), olc::SOUND::listActiveSamples.end(), [&](const olc::SOUND::sCurrentlyPlayingSample& s) { return s.nAudioSampleID == sndIdle; });
             if (s == olc::SOUND::listActiveSamples.end())
                 olc::SOUND::PlaySample(sndIdle, true);
-
+                */
             if ((GetKey(olc::UP).bHeld) || (GetKey(olc::DOWN).bHeld)) {
                 
                 myTank.tankRect.vel = { 6*cosf(r*.125*PI),6*(sinf(r*.125*PI)) };
             }
             else {
                 myTank.tankRect.vel = { 0,0 };
-                olc::SOUND::StopSample(sndDriving);
+             //   olc::SOUND::StopSample(sndDriving);
             }
 
             if (GetKey(olc::DOWN).bHeld) {
@@ -307,13 +308,14 @@ class Combat : public olc::PixelGameEngine
                 myTank.ang = 0;
 
             //Driving sound
-            if (myTank.tankRect.vel.x != 0 || myTank.tankRect.vel.y != 0) {
+        /*    if (myTank.tankRect.vel.x != 0 || myTank.tankRect.vel.y != 0) {
                 auto s = std::find_if(olc::SOUND::listActiveSamples.begin(), olc::SOUND::listActiveSamples.end(), [&](const olc::SOUND::sCurrentlyPlayingSample& s) { return s.nAudioSampleID == sndDriving; });
                 if (s == olc::SOUND::listActiveSamples.end()) {
                     olc::SOUND::StopSample(sndIdle);
                     olc::SOUND::PlaySample(sndDriving);
                 }
-            }
+                
+            }*/
         }
 
         r = (int((myTank.ang / PI) * 8)); r = (r < 0) ? abs(r) : 16 - r; if (r == 16) r = 0;  //Set rotation to one of 16 positions
@@ -345,7 +347,7 @@ class Combat : public olc::PixelGameEngine
             myTank.bullet.pos = muzzle_pos[r]+myTank.tankRect.pos;
             myTank.bullet.size = { 1.0,1.0 };
             myTank.bullet.vel = { float(100.0 * cosf(r*0.125*PI)),float (100.0 * (sinf(r*0.125*PI))) };          
-            olc::SOUND::PlaySample(sndPew);
+          //  olc::SOUND::PlaySample(sndPew);
         }
 
         fAccumTime += fElapsedTime;
@@ -362,7 +364,7 @@ class Combat : public olc::PixelGameEngine
                 otherTank.bullet.pos = muzzle_pos[q]+otherTank.tankRect.pos;
                 otherTank.bullet.size = { 1.0,1.0 };
                 otherTank.bullet.vel = { float(100.0 * cosf(q * 0.125 * PI)),float(100.0 * (sinf(q * 0.125 * PI))) };
-                olc::SOUND::PlaySample(sndPew);
+               // olc::SOUND::PlaySample(sndPew);
             }  
             fAccumTime = 0;
         }
@@ -423,8 +425,8 @@ class Combat : public olc::PixelGameEngine
                             (*curoppTank).spinning = true; (*curTank).score += 1;
                             if ((*curTank).score > 99)
                                 (*curTank).score = 0;
-                            olc::SOUND::StopSample(sndIdle);                       
-                            olc::SOUND::PlaySample(sndPow);
+                        //    olc::SOUND::StopSample(sndIdle);                       
+                        //    olc::SOUND::PlaySample(sndPow);
                             (*curoppTank).tankRect.vel += (2 * (*curTank).bullet.vel); //Blown back
                             otherTank.bullet_exists = false;  //Pause fighting
                             fAccumTime = 0;                        
@@ -477,7 +479,7 @@ class Combat : public olc::PixelGameEngine
     }
      bool OnUserDestroy()
             {
-                olc::SOUND::DestroyAudio();
+                //olc::SOUND::DestroyAudio();
                 return true;
             }
 };
